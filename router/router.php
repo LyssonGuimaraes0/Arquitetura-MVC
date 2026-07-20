@@ -31,33 +31,28 @@ class Router
     }
 
     //Verifica se Rota bate
-    private function matchRoute(string $routeUri, string $requestUri, $params = []): array
+    private function matchRoute(string $routeUri, string $requestUri)
     {
-
-        $paramNames = [];
+        // Captura os nomes dos parâmetros da rota
         preg_match_all('/\{([^}]+)\}/', $routeUri, $matches);
         $paramNames = $matches[1];
 
+        // Transforma /usuarios/{id} em /usuarios/([^/]+)
         $pattern = preg_replace('/\{([^}]+)\}/', '([^/]+)', $routeUri);
-        $pattern = "#^$pattern$#";
+        $pattern = "#^{$pattern}$#";
 
+        // Verifica se a URL corresponde à rota
+        if (preg_match($pattern, $requestUri, $matches)) {
 
-        if (preg_match($pattern, $routeUri, $matches)) {
-
-            array_shift($matches); // remove match completo
+            array_shift($matches);
 
             $paramsAssoc = [];
-            var_dump($)
 
             foreach ($paramNames as $index => $name) {
                 $paramsAssoc[$name] = $matches[$index] ?? null;
             }
 
-            return [$action, $paramsAssoc];
-        }
-
-        if ($routeUri === $requestUri) {
-            return true;
+            return $paramsAssoc;
         }
 
         return false;
@@ -70,34 +65,57 @@ class Router
             //Coleta URL
             $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             $method = $_SERVER['REQUEST_METHOD'];
+            $type = '';
 
             //Remoção de Base da URL
 
             $uri = str_replace($_ENV['RAIZ_URL'], '', $uri);
 
             foreach (self::$routes as $route) {
+
                 if ($route['method'] !== $method) {
                     continue;
                 }
 
-                if (self::matchRoute($route['uri'], $uri, )) {
-                    [$type, $controller, $methodAction] = $route['action'];
+                //Busca pelas rotas ate encontra a rota que bate
+                $params = $this->matchRoute($route['uri'], $uri);
 
-                    $controllerNameSpace = "App\\controllers\\{$type}\\{$controller}";
-
-                    if (!class_exists($controllerNameSpace)) {
-                        throw new Exception();
-                    }
-
-                    $instance = new $controllerNameSpace();
-
-                    $instance->$methodAction(/* ...$params */);
-
+                if ($params === false) {
+                    continue;
                 }
 
+                [$type, $controller, $methodAction] = $route['action'];
+
+                $controllerNameSpace = "App\\controllers\\{$type}\\{$controller}";
+
+                if (!class_exists($controllerNameSpace)) {
+                    throw new Exception("Controller {$controllerNameSpace} não encontrado.");
+                }
+
+                $instance = new $controllerNameSpace();
+
+                //armazena paramentos e argumentos de URL
+                $args = [];
+
+                // Adiciona o parâmetro da rota, se existir
+                if (!empty($params)) {
+                    $args[] = reset($params);
+                }
+
+                // Adiciona a query string, se existir
+                if (!empty($_GET)) {
+                    $args[] = $_GET;
+                }
+
+                // Chama o método
+                $instance->$methodAction(...$args);
+                return;
+
             }
+            //Caso nenhuma rota seja encontrada
+            throw new Exception("Página não encontrada.");
         } catch (\Exception $e) {
-            # code...
+            echo $e->getMessage();
         }
 
 
