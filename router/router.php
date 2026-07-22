@@ -3,8 +3,14 @@
 $router = new Router();
 
 //Criação de Rotas
-$router::get('/', ['web', 'HomeController', 'index']);
+
+//Rotas Web
+$router::get('/', ['web', 'LoginController', 'index']);
 $router::get('/user/{id}', ['web', 'HomeController', 'userid']);
+
+//Rotas POST
+$router::post('/api/auth/login', ['api', 'AuthController', 'login']);
+
 
 
 //Class Router
@@ -18,6 +24,11 @@ class Router
     public static function get(string $uri, array $action)
     {
         self::addRouter('GET', $uri, $action);
+    }
+
+    public static function post(string $uri, array $action)
+    {
+        self::addRouter('POST', $uri, $action);
     }
 
     //Cria Um nova Rota

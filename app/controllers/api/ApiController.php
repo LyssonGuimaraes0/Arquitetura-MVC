@@ -1,6 +1,6 @@
 <?php 
 
-namespace App\controller\api;
+namespace App\controllers\api;
 
 class ApiController
 {

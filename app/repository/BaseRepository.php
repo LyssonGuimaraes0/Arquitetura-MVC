@@ -45,16 +45,17 @@ class BaseRepository extends Database
         if (!empty($where)) {
             $conditions = [];
 
-            $operator = $join['type'];
-
-            $allowedoperator = ['>=', '<=', '!=', '<>', '>', '<', 'LIKE', 'like', '='];
-
-            if (!in_array($operator, $allowedoperator)) {
-                throw new \Exception("Tipo de JOIN inválido.");
-            }
+            $allowedoperator = ['>=', '<=', '!=', '<>', '>', '<', 'LIKE', '='];
 
             //Monta Where $condition $operador ?
             foreach ($where as $condition) {
+
+                $operator = strtoupper($condition['operator']);
+
+                if (!in_array($operator, $allowedoperator)) {
+                    throw new \Exception("Tipo de JOIN inválido.");
+                }
+
                 $conditions[] = "{$condition['column']} {$operator} ?";
                 $values[] = $condition['value'];
             }
