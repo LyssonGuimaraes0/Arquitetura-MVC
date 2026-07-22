@@ -8,8 +8,31 @@ use PDO;
 class BaseRepository extends Database
 {
 
+    private $allowedOperators = ['>=', '<=', '!=', '<>', '>', '<', 'LIKE', '='];
+
+
     //Função Para Montar Insert 
-    protected function insert(string $table, array $query) {}
+    protected function insert(string $table, array $Allcolumns)
+    {
+        $columns = [];
+        $values = [];
+        foreach ($Allcolumns as $column) {
+            $columns[] = $column['column'];
+            $values[] = $column['value'];
+        }
+
+        $placeholders = array_fill(0, count($columns), '?');
+
+
+        $sql = "INSERT INTO $table (" . implode(', ', $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
+
+        $stmt = self::connection()->prepare($sql);
+
+        $stmt->execute($values);
+
+        return;
+
+    }
 
     //Função Para Montar Select 
     protected function select(string $table, array $columns, array $joins = [], array $where = [], array $orderBy = [], bool $fetchAll = false)
@@ -45,14 +68,12 @@ class BaseRepository extends Database
         if (!empty($where)) {
             $conditions = [];
 
-            $allowedoperator = ['>=', '<=', '!=', '<>', '>', '<', 'LIKE', '='];
-
             //Monta Where $condition $operador ?
             foreach ($where as $condition) {
 
                 $operator = strtoupper($condition['operator']);
 
-                if (!in_array($operator, $allowedoperator)) {
+                if (!in_array($operator, $this->allowedOperators)) {
                     throw new \Exception("Tipo de JOIN inválido.");
                 }
 
@@ -82,9 +103,8 @@ class BaseRepository extends Database
             $sql .= implode(", ", $orders);
         }
 
-        $pdo = self::connection();
+        $stmt = self::connection()->prepare($sql);
 
-        $stmt = $pdo->prepare($sql);
         $stmt->execute($values);
 
         if ($fetchAll != false) {
@@ -92,5 +112,88 @@ class BaseRepository extends Database
         } else {
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
+    }
+
+    //Função para montar UPDATE
+
+    protected function update(string $table, array $columns, array $where = [])
+    {
+
+        if (empty($where)) {
+            throw new \Exception("UPDATE bloqueado: WHERE obrigatório.");
+        }
+
+
+        $set = [];
+        $values = [];
+
+
+        // Monta SET
+        foreach ($columns as $column) {
+
+            $set[] = "{$column['column']} = ?";
+            $values[] = $column['value'];
+
+        }
+
+
+        // Monta WHERE
+        $conditions = [];
+
+        foreach ($where as $condition) {
+
+            $operator = strtoupper($condition['operator']);
+
+            if (!in_array($operator, $this->allowedOperators)) {
+                throw new \Exception("Operador inválido.");
+            }
+
+
+            $conditions[] = "{$condition['column']} {$operator} ?";
+            $values[] = $condition['value'];
+
+        }
+
+
+        $sql = "UPDATE {$table} 
+            SET " . implode(', ', $set) . "
+            WHERE " . implode(' AND ', $conditions);
+
+        $stmt = self::connection()->prepare($sql);
+
+        return $stmt->execute($values);
+    }
+
+
+
+    //Função de montar Delete
+    protected function delete(string $table, array $where = [])
+    {
+        // Segurança: não permite DELETE sem condição
+        if (empty($where)) {
+            throw new \Exception("DELETE bloqueado: WHERE obrigatório.");
+        }
+
+        $conditions = [];
+        $values = [];
+
+        foreach ($where as $condition) {
+
+            $operator = strtoupper($condition['operator']);
+
+            if (!in_array($operator, $this->allowedOperators)) {
+                throw new \Exception("Tipo de Operador inválido.");
+            }
+
+            $conditions[] = "{$condition['column']} {$operator} ?";
+            $values[] = $condition['value'];
+
+        }
+
+        $sql = "DELETE FROM {$table} WHERE " . implode(" AND ", $conditions);
+
+        $stmt = self::connection()->prepare($sql);
+
+        return $stmt->execute($values);
     }
 }
