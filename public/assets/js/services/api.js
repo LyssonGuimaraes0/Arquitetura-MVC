@@ -1,5 +1,4 @@
 
-const BASE_URL = '/Projetos-pessoais/arquitetura-mvc';
 const api = {
 
     async request(url, options = {}) {
@@ -23,7 +22,7 @@ const api = {
 
         try {
 
-            const response = await fetch(BASE_URL + url, {
+            const response = await fetch(URLBASE + url, {
                 method: options.method ?? 'GET',
                 credentials: 'include',
                 headers,

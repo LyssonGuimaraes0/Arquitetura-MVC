@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<?php /* include_once COMPONENTS_PATH . "/head.php"; */ ?>
+<?php include_once COMPONENTS_PATH . "/head.php"; ?>
 
 <body>
     <section class="login-section">
