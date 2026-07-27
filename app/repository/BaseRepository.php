@@ -12,7 +12,7 @@ class BaseRepository extends Database
 
 
     //Função Para Montar Insert 
-    protected function insert(string $table, array $Allcolumns)
+    protected function insert(string $table, array $Allcolumns, bool $idInserted = false)
     {
         $columns = [];
         $values = [];
@@ -28,7 +28,12 @@ class BaseRepository extends Database
 
         $stmt = self::connection()->prepare($sql);
 
+
         $stmt->execute($values);
+
+        if ($idInserted) {
+            return self::connection()->lastInsertId();
+        }
 
         return;
 
